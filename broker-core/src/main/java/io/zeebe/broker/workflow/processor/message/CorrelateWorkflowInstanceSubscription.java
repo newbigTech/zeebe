@@ -106,7 +106,6 @@ public final class CorrelateWorkflowInstanceSubscription
 
     final WorkflowInstanceSubscription subscription =
         subscriptionState.getSubscription(elementInstanceKey, subscriptionRecord.getMessageName());
-    correlationKey = subscription.getCorrelationKey();
 
     if (subscription == null || subscription.isClosing()) {
       RejectionType type = RejectionType.NOT_FOUND;
@@ -115,9 +114,11 @@ public final class CorrelateWorkflowInstanceSubscription
       if (subscription != null) { // closing
         type = RejectionType.INVALID_STATE;
         reason = ALREADY_CLOSING_MESSAGE;
+
+        correlationKey = subscription.getCorrelationKey();
+        sideEffect.accept(this::sendRejectionCommand); // TODO
       }
 
-      sideEffect.accept(this::sendRejectionCommand); // TODO
       streamWriter.appendRejection(
           record,
           type,
