@@ -48,6 +48,7 @@ public class MessageCorrelator {
   private Consumer<SideEffectProducer> sideEffect;
   private MessageSubscriptionRecord subscriptionRecord;
   private MessageSubscription subscription;
+  private long messageKey;
 
   public void correlateNextMessage(
       MessageSubscription subscription,
@@ -76,8 +77,8 @@ public class MessageCorrelator {
       messageVariables.wrap(message.getVariables());
       sideEffect.accept(this::sendCorrelateCommand);
 
-      messageState.putMessageCorrelation(
-          message.getKey(), subscriptionRecord.getWorkflowInstanceKey());
+      messageKey = message.getKey();
+      messageState.putMessageCorrelation(messageKey, subscriptionRecord.getWorkflowInstanceKey());
     }
 
     return isCorrelatedBefore;
@@ -88,6 +89,7 @@ public class MessageCorrelator {
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageName(),
+        messageKey,
         messageVariables);
   }
 }

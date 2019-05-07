@@ -18,6 +18,7 @@
 package io.zeebe.broker.subscription.command;
 
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.messageKeyNullValue;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.variablesHeaderLength;
@@ -43,6 +44,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long elementInstanceKey;
+  private long messageKey;
 
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer variables = new UnsafeBuffer(0, 0);
@@ -74,6 +76,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
         .subscriptionPartitionId(subscriptionPartitionId)
         .workflowInstanceKey(workflowInstanceKey)
         .elementInstanceKey(elementInstanceKey)
+        .messageKey(messageKey)
         .putMessageName(messageName, 0, messageName.capacity())
         .putVariables(variables, 0, variables.capacity());
   }
@@ -85,6 +88,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     subscriptionPartitionId = decoder.subscriptionPartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
+    messageKey = decoder.messageKey();
 
     offset = decoder.limit();
 
@@ -106,6 +110,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     subscriptionPartitionId = subscriptionPartitionIdNullValue();
     workflowInstanceKey = workflowInstanceKeyNullValue();
     elementInstanceKey = elementInstanceKeyNullValue();
+    messageKey = messageKeyNullValue();
     messageName.wrap(0, 0);
     variables.wrap(0, 0);
   }
@@ -132,6 +137,14 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
 
   public void setElementInstanceKey(long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
+  }
+
+  public long getMessageKey() {
+    return messageKey;
+  }
+
+  public void setMessageKey(final long messageKey) {
+    this.messageKey = messageKey;
   }
 
   public DirectBuffer getMessageName() {

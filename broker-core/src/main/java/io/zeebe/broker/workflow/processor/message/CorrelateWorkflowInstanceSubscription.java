@@ -40,6 +40,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 
 public final class CorrelateWorkflowInstanceSubscription
     implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
@@ -63,6 +64,7 @@ public final class CorrelateWorkflowInstanceSubscription
   private final KeyGenerator keyGenerator;
 
   private WorkflowInstanceSubscriptionRecord subscriptionRecord;
+  private DirectBuffer correlationKey;
 
   public CorrelateWorkflowInstanceSubscription(
       final TopologyManager topologyManager,
@@ -104,8 +106,8 @@ public final class CorrelateWorkflowInstanceSubscription
 
     final WorkflowInstanceSubscription subscription =
         subscriptionState.getSubscription(elementInstanceKey, subscriptionRecord.getMessageName());
+    correlationKey = subscription.getCorrelationKey();
 
-    sideEffect.accept(this::sendAcknowledgeCommand);
     if (subscription == null || subscription.isClosing()) {
       RejectionType type = RejectionType.NOT_FOUND;
       String reason = NO_SUBSCRIPTION_FOUND_MESSAGE;
@@ -115,6 +117,7 @@ public final class CorrelateWorkflowInstanceSubscription
         reason = ALREADY_CLOSING_MESSAGE;
       }
 
+      sideEffect.accept(this::sendRejectionCommand); // TODO
       streamWriter.appendRejection(
           record,
           type,
@@ -142,6 +145,8 @@ public final class CorrelateWorkflowInstanceSubscription
                 record.getValue().getVariables());
 
     if (isOccurred) {
+      sideEffect.accept(this::sendAcknowledgeCommand); // TODO: here
+
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
       streamWriter.appendFollowUpEvent(
@@ -149,6 +154,7 @@ public final class CorrelateWorkflowInstanceSubscription
           WorkflowInstanceIntent.EVENT_OCCURRED,
           elementInstance.getValue());
     } else {
+      sideEffect.accept(this::sendRejectionCommand);
       streamWriter.appendRejection(
           record,
           RejectionType.INVALID_STATE,
@@ -165,5 +171,14 @@ public final class CorrelateWorkflowInstanceSubscription
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageName());
+  }
+
+  private boolean sendRejectionCommand() {
+    return subscriptionCommandSender.resetMessageCorrelation(
+        subscriptionRecord.getWorkflowInstanceKey(),
+        subscriptionRecord.getElementInstanceKey(),
+        subscriptionRecord.getMessageKey(),
+        subscriptionRecord.getMessageName(),
+        correlationKey);
   }
 }

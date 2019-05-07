@@ -60,6 +60,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
   private TypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
+  private long messageKey;
 
   private final LongArrayList correlatedWorkflowInstances = new LongArrayList();
   private final LongArrayList correlatedElementInstances = new LongArrayList();
@@ -109,10 +110,11 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    final long key = keyGenerator.nextKey();
+    messageKey = keyGenerator.nextKey();
 
-    streamWriter.appendNewEvent(key, MessageIntent.PUBLISHED, command.getValue());
-    responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, command.getValue(), command);
+    streamWriter.appendNewEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
+    responseWriter.writeEventOnCommand(
+        messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
     correlatedWorkflowInstances.clear();
     correlatedElementInstances.clear();
@@ -145,7 +147,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     if (messageRecord.getTimeToLive() > 0L) {
       final Message message =
           new Message(
-              key,
+              messageKey,
               messageRecord.getName(),
               messageRecord.getCorrelationKey(),
               messageRecord.getVariables(),
@@ -161,7 +163,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
     } else {
       // don't add the message to the store to avoid that it can be correlated afterwards
-      streamWriter.appendFollowUpEvent(key, MessageIntent.DELETED, messageRecord);
+      streamWriter.appendFollowUpEvent(messageKey, MessageIntent.DELETED, messageRecord);
     }
   }
 
@@ -175,6 +177,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               workflowInstanceKey,
               elementInstanceKey,
               messageRecord.getName(),
+              messageKey,
               messageRecord.getVariables());
 
       if (!success) {

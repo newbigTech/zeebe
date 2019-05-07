@@ -68,7 +68,10 @@ public class MessageObserver implements StreamProcessorLifecycleAware {
 
     final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
-            subscriptionCommandSender, subscriptionState, SUBSCRIPTION_TIMEOUT.toMillis());
+            subscriptionCommandSender,
+            subscriptionState,
+            messageState,
+            SUBSCRIPTION_TIMEOUT.toMillis());
     actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
   }
 }

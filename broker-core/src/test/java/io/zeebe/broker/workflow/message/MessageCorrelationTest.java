@@ -678,6 +678,34 @@ public class MessageCorrelationTest {
     assertThat(correlatedValues).containsOnly("0", "1", "2");
   }
 
+  // TODO: remove
+  @Test
+  public void shouldRetryToCorrelateIfMessageIsCorrelated() {
+    // given
+    testClient.deploy(SINGLE_MESSAGE_WORKFLOW);
+    final long firstInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+            .getInstanceKey();
+    final long firstMsgKey = testClient.publishMessage("message", "123").getKey();
+
+    // when
+    final long secondMsgKey = testClient.publishMessage("message", "123").getKey();
+    final long secondInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+            .getInstanceKey();
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+                .limit(2))
+        .extracting(r -> r.getValue().getWorkflowInstanceKey())
+        .containsExactly(firstInstanceKey, secondInstanceKey);
+  }
+
   private List<Record<WorkflowInstanceSubscriptionRecordValue>> awaitMessagesCorrelated(
       int messagesCount) {
     return RecordingExporter.workflowInstanceSubscriptionRecords(
