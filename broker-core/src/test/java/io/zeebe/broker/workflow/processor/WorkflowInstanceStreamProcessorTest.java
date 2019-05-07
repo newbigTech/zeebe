@@ -645,6 +645,7 @@ public class WorkflowInstanceStreamProcessorTest {
         .setSubscriptionPartitionId(START_PARTITION_ID)
         .setWorkflowInstanceKey(catchEvent.getValue().getWorkflowInstanceKey())
         .setElementInstanceKey(catchEvent.getKey())
+        .setMessageKey(3L)
         .setMessageName(wrapString("order canceled"));
   }
 }

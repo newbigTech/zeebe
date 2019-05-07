@@ -223,6 +223,7 @@ public class SubscriptionApiCommandMessageHandler
     messageSubscriptionRecord
         .setWorkflowInstanceKey(closeMessageSubscriptionCommand.getWorkflowInstanceKey())
         .setElementInstanceKey(closeMessageSubscriptionCommand.getElementInstanceKey())
+        .setMessageKey(-1L) // TODO
         .setMessageName(closeMessageSubscriptionCommand.getMessageName());
 
     return writeCommand(

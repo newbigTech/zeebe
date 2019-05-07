@@ -155,7 +155,9 @@ public final class CorrelateWorkflowInstanceSubscription
           WorkflowInstanceIntent.EVENT_OCCURRED,
           elementInstance.getValue());
     } else {
+      correlationKey = subscription.getCorrelationKey();
       sideEffect.accept(this::sendRejectionCommand);
+
       streamWriter.appendRejection(
           record,
           RejectionType.INVALID_STATE,
